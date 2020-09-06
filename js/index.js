@@ -8,41 +8,45 @@ const btnCloseRef = document.querySelector(
 const lightboxImageRef = document.querySelector(".lightbox__image");
 const overlayRef = document.querySelector(".lightbox__content");
 let index = 0;
-let dataIndex = 0;
 
-const createIndex = () => (index += 1);
-
-const createGalleryImage = (image) => {
-  const galleryImage = document.createElement("img");
-  galleryImage.classList.add("gallery__image");
-  galleryImage.setAttribute("src", image.preview);
-  galleryImage.setAttribute("data-source", image.original);
-  galleryImage.setAttribute("alt", image.description);
-  galleryImage.setAttribute("data-index", createIndex());
-  return galleryImage;
+const createElement = (name, attrs = {}) => {
+  const element = document.createElement(name);
+  const keys = Object.keys(attrs);
+  element.classList.add(attrs.class);
+  for (const key of keys) {
+    element.setAttribute(key, attrs[key]);
+  }
+  return element;
 };
 
-const createGalleryLink = (image) => {
-  const galleryImage = createGalleryImage(image);
-  const galleryLink = document.createElement("a");
-  galleryLink.classList.add("gallery__link");
-  galleryLink.setAttribute("href", image.original);
-  galleryLink.appendChild(galleryImage);
-  return galleryLink;
+const createGalleryItems = (image, index) => {
+  const galleryItemAttrs = {
+    class: "gallery__item",
+  };
+  const galleryLinkAttrs = {
+    class: "gallery__link",
+    href: image.original,
+  };
+  const galleryImgAttrs = {
+    class: "gallery__image",
+    src: image.preview,
+    "data-index": index,
+    alt: image.description,
+    "data-source": image.original,
+  };
+
+  const createGalleryItem = createElement("li", galleryItemAttrs);
+  const createGalleryImg = createElement("img", galleryImgAttrs);
+  const createGalleryLink = createElement("a", galleryLinkAttrs);
+  createGalleryLink.appendChild(createGalleryImg);
+  createGalleryItem.appendChild(createGalleryLink);
+  return createGalleryItem;
 };
 
-const createGalleryItem = (image) => {
-  const galleryItem = document.createElement("li");
-  galleryItem.classList.add("gallery__item");
-  const galleryLink = createGalleryLink(image);
-  galleryItem.appendChild(galleryLink);
-  return galleryItem;
-};
-
-const galleryImages = images.map((image) => {
-  return createGalleryItem(image);
+const galleryItems = images.map((image, index) => {
+  return createGalleryItems(image, index);
 });
-jsGalleryRef.append(...galleryImages);
+jsGalleryRef.append(...galleryItems);
 
 const handlejsGalleryShow = (event) => {
   event.preventDefault();
@@ -50,8 +54,7 @@ const handlejsGalleryShow = (event) => {
   if (target.nodeName !== "IMG") return;
   modalRef.classList.add("is-open");
   lightboxImageRef.src = target.dataset.source;
-  dataIndex = target.dataset.index - 1;
-  console.log(dataIndex);
+  index = target.dataset.index;
 };
 
 const handlejsGalleryClose = () => {
@@ -67,33 +70,31 @@ const handleOverlayClickClose = (event) => {
 };
 
 const handleEscPressing = (event) => {
-  const { key } = event;
   if (!modalRef.classList.contains("is-open")) return;
-  if (key === "Escape") {
-    handlejsGalleryClose();
+  handlejsGalleryClose();
+};
+
+const handlePrevSlide = (event) => {
+  if (!modalRef.classList.contains("is-open")) return;
+  if (index > 0) {
+    index -= 1;
+    lightboxImageRef.src = images[index].original;
   }
 };
 
-const handleLeftSlide = (event) => {
-  const { key } = event;
+const handleNextSlide = (event) => {
   if (!modalRef.classList.contains("is-open")) return;
-  if (dataIndex > 0) {
-    if (key === "ArrowLeft") {
-      dataIndex -= 1;
-      lightboxImageRef.src = images[dataIndex].original;
-    }
+  if (index < images.length - 1) {
+    index += 1;
+    lightboxImageRef.src = images[index].original;
   }
 };
 
-const handleRightSlide = (event) => {
+const handlePressing = (event) => {
   const { key } = event;
-  if (!modalRef.classList.contains("is-open")) return;
-  if (dataIndex < images.length - 1) {
-    if (key === "ArrowRight") {
-      dataIndex += 1;
-      lightboxImageRef.src = images[dataIndex].original;
-    }
-  }
+  if (event.key === "Escape") handleEscPressing();
+  if (event.key === "ArrowLeft") handlePrevSlide();
+  if (event.key === "ArrowRight") handleNextSlide();
 };
 
 jsGalleryRef.addEventListener("click", handlejsGalleryShow);
@@ -102,7 +103,4 @@ btnCloseRef.addEventListener("click", handlejsGalleryClose);
 
 overlayRef.addEventListener("click", handleOverlayClickClose);
 
-window.addEventListener("keydown", handleEscPressing);
-
-window.addEventListener("keydown", (event) => handleLeftSlide(event));
-window.addEventListener("keydown", (event) => handleRightSlide(event));
+window.addEventListener("keydown", handlePressing);
